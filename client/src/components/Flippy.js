@@ -205,7 +205,6 @@ const Flippy = ({ maxLen, target = "" , percent = 0.0}) => {
         backCtx.fillRect(borderWidth, borderWidth, width * maxLen, height);
       }
 
-      let draws = 0;
       for (let i = 0; i < maxLen; i++) {
         // UPDATE LETTER STATE
 
@@ -251,8 +250,6 @@ const Flippy = ({ maxLen, target = "" , percent = 0.0}) => {
         }
     
         // DRAW LETTER
-
-        draws++;
 
         frontCtx.save();
         frontCtx.translate(borderWidth + i * width, borderWidth);
@@ -325,7 +322,6 @@ const Flippy = ({ maxLen, target = "" , percent = 0.0}) => {
         
         frontCtx.restore();
       }
-      console.log(draws);
       
       ctx.drawImage(backCanvas, 0, 0);
       ctx.drawImage(frontCanvas, 0, 0);
