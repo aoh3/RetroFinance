@@ -97,7 +97,7 @@ genCharGroup("?");
 genCharGroup(" ");
 genCharGroup("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 genCharGroup("0123456789");
-genCharGroup("%$,.'\"!;:");
+genCharGroup("%$,.'\"!;:|—");
 genCharGroup("-+");
 genCharGroup("_#*^");
 genCharGroup("()[]{}<>");
@@ -247,7 +247,7 @@ const Flippy = ({ maxLen, target = "" , percent = 0.0}) => {
         } else {
           letters[i][1] = '';
           letters[i][2] = 0.0;
-          if (!forceDrawRef.current) continue;
+          if (!forceDrawRef.current && Math.random() < 0.95) continue;
         }
     
         // DRAW LETTER

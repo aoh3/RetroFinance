@@ -6,6 +6,9 @@ const path = require('path'); // for serving static assets
 const Alpaca = require('@alpacahq/alpaca-trade-api');
 require('dotenv').config();
 
+// Load environment variables from project root .env when running from backend directory
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+
 const PORT = Number(process.env.PORT || 5000);
 const MAX_NEWS_PER_SYMBOL = Number(process.env.MAX_NEWS_PER_SYMBOL || 5);
 const DEFAULT_HISTORY_RANGE = process.env.DEFAULT_HISTORY_RANGE || '1d';
