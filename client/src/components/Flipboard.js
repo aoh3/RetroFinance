@@ -1,24 +1,47 @@
 import React, { useMemo, useState, useEffect } from 'react'; // ensure useMemo, useState imported
 import clsx from 'clsx';
 import './Flipboard.css';
-import SplitFlapText from './splitflap/SplitFlapText';
 import TileGraph from './TileGraph';
-import RollingHeadline from './RollingHeadline';
 import TradingPanel from './TradingPanel';
 import { MarketProvider, useQuote } from '../hooks/useMarketFeed';
-import useHistoricalData from '../hooks/useHistoricalData';
 import { useQuery } from '@tanstack/react-query';
 // import real-time hook removed; use REST-based useNewsFeed instead
-import { useAlpacaAccount, useAlpacaGetQuotes } from '../hooks/useAlpaca';
+import { useAlpacaAccount, useAlpacaGetBars, useAlpacaGetQuotes } from '../hooks/useAlpaca';
 import Flippy from './Flippy';
 
-const WATCHLIST_SYMBOLS = ['AAPL', 'GOOG', 'MSFT', 'TSLA', 'AMZN', 'NVDA'];
+let WATCHLIST_SYMBOLS = ['AAPL', 'GOOG', 'MSFT', 'TSLA', 'AMZN', 'NVDA'];
 const ACCOUNT_ROWS = [
   { label: 'EQUITY', field: 'portfolio_value' },
   { label: 'CASH', field: 'cash' },
   { label: 'RT IRA', field: 'buying_power' },
   { label: '401K', field: 'effective_buying_power' }
 ];
+
+const fullJustify = (text, maxWidth) => {
+  const words = text.split(' ').filter(Boolean);
+  const lines = [];
+  let lineWords = [];
+  let numLetters = 0;
+
+  for (const w of words) {
+    if (numLetters + lineWords.length + w.length > maxWidth) {
+      let line = lineWords.join(' ');
+      line += ' '.repeat(maxWidth - line.length);
+      lines.push(line);
+      lineWords = [w];
+      numLetters = w.length;
+    } else {
+      lineWords.push(w);
+      numLetters += w.length;
+    }
+  }
+  if (lineWords.length > 0) {
+    let line = lineWords.join(' ');
+    line += ' '.repeat(maxWidth - line.length);
+    lines.push(line);
+  }
+  return lines;
+};
 
 const formatPrice = (value) => {
   if (value === undefined || value === null) {
@@ -35,22 +58,6 @@ const formatPercent = (value) => {
   const numeric = Number(value);
   const sign = numeric > 0 ? '+' : '';
   return `${sign}${numeric.toFixed(2)}%`;
-};
-
-const toneForChange = (value) => {
-  if (value === undefined || value === null) {
-    return 'neutral';
-  }
-
-  if (value > 0) {
-    return 'up';
-  }
-
-  if (value < 0) {
-    return 'down';
-  }
-
-  return 'neutral';
 };
 
 const WatchlistPanel = ({ symbols, onSelect, selectedSymbol }) => {
@@ -154,7 +161,7 @@ const AccountsPanel = () => {
           const raw = account ? Number(account[row.field]) : null;
           return (
             <div className="board-row" key={row.field}>
-              <Flippy maxLen={row.label.length} target={row.label} />
+              <Flippy maxLen={Math.max(row.label.length, 6)} target={row.label} />
               <Flippy maxLen={12} target={" ".repeat(12 - formatPrice(raw).length) + formatPrice(raw)} />
             </div>
           );
@@ -168,54 +175,34 @@ const AccountsPanel = () => {
 };
 
 const GraphPanel = ({ symbol }) => {
-  const { data } = useHistoricalData(symbol, { range: '1d', interval: '5m' });
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  .toISOString()
+  .split('T')[0];
+  const today = new Date().toISOString().split('T')[0];
+  const { data } = useAlpacaGetBars(symbol, {
+    interval: '1d',
+    start: thirtyDaysAgo,
+    end: today
+  });
   const quote = useQuote(symbol);
 
+  // transform raw bars to simplified open/close series
   const series = useMemo(() => {
-    if (!data?.bars || data.bars.length === 0) {
+    if (!data?.bars) {
       return [];
     }
-
-    return data.bars
-      .map((bar) => {
-        const rawTime = bar.t || bar.time || bar.Timestamp || bar.start || bar.end;
-        const time = rawTime ? new Date(rawTime).getTime() : Date.now();
-        return {
-          time,
-          close: Number(bar.c ?? bar.close ?? bar.end_price ?? bar.Close ?? null),
-        };
-      })
-      .filter((point) => Number.isFinite(point.time) && Number.isFinite(point.close))
-      .sort((a, b) => a.time - b.time);
-  }, [data]);
+    const rawBars = Array.isArray(data.bars)
+      ? data.bars
+      : data.bars[symbol] || [];
+    return rawBars.map((bar) => ({
+      open: Number(bar.o),
+      close: Number(bar.c),
+    }));
+  }, [data, symbol]);
 
   return (
     <section className="board-section graph" aria-label="Price history">
-      <div className="graph-header">
-        <SplitFlapText value={`${symbol || '-----'} BALANCE`} padTo={20} size="sm" />
-        <SplitFlapText
-          value={formatPrice(quote?.price)}
-          padTo={12}
-          size="sm"
-          align="right"
-          tone={toneForChange(quote?.change)}
-        />
-      </div>
-      <TileGraph data={series} />
-      <div className="graph-footer">
-        <SplitFlapText
-          value={formatPercent(quote?.changePercent)}
-          padTo={10}
-          size="sm"
-          tone={toneForChange(quote?.changePercent)}
-        />
-        <SplitFlapText
-          value={`VOL ${quote?.volume ? quote.volume.toLocaleString() : '---'}`}
-          padTo={16}
-          size="sm"
-          align="right"
-        />
-      </div>
+      <TileGraph data={series} rows={8} columns={16} />
     </section>
   );
 };
@@ -233,13 +220,28 @@ const NewsPanel = () => {
     refetchOnWindowFocus: false,
   });
   const items = news.slice(0, 5);
+  let itemLines = items.map(item => fullJustify(item.title.toUpperCase(), 25).slice(0, 3));
 
   return (
     <section className="board-section news" aria-label="News">
   <Flippy maxLen={12} target="    NEWS    " />
       <div className="board-rows" role="list">
         {items.map((item, index) => (
-          <Flippy maxLen={4} target={item.symbol || '----'} key={index} />
+        <div>
+          <div style={{ width: '30%' }}>
+            <Flippy maxLen={4} target={item.symbol || '----'} />
+          </div>
+          {itemLines[index].length > 0 ? (
+            itemLines[index].map((line) => (
+              <Flippy 
+                maxLen={23}
+                target={line}
+              />
+            ))
+          ) : (
+            <Flippy maxLen={23} target="NO HEADLINE FOUND" />
+          )}
+        </div>
         ))}
       </div>
     </section>

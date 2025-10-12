@@ -5,6 +5,7 @@
   min-height: 100vh;
   padding: 2.5rem;
   background: rgb(19, 19, 19);
+  overflow: hidden;
 }
 
 .board-grid {

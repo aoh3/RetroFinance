@@ -65,3 +65,18 @@ export const useAlpacaGetQuotes = (symbols = []) =>
     },
     enabled: symbols.length > 0,
   });
+
+/**
+ * Fetch historical bar data for a single symbol.
+ * @param {string} symbol - Stock symbol
+ * @param {object} params - Query params: interval, start, end, limit
+ */
+export const useAlpacaGetBars = (symbol, params = {}) =>
+  useQuery({
+    queryKey: ['alpaca', 'bars', symbol, params],
+    queryFn: () => {
+      const query = new URLSearchParams(params).toString();
+      return getJson(`/api/market/bars/${encodeURIComponent(symbol)}?${query}`);
+    },
+    enabled: Boolean(symbol),
+  });

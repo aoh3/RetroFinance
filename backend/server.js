@@ -7,7 +7,7 @@ const Alpaca = require('@alpacahq/alpaca-trade-api');
 require('dotenv').config();
 
 const PORT = Number(process.env.PORT || 5000);
-const MAX_NEWS_PER_SYMBOL = Number(process.env.MAX_NEWS_PER_SYMBOL || 4);
+const MAX_NEWS_PER_SYMBOL = Number(process.env.MAX_NEWS_PER_SYMBOL || 5);
 const DEFAULT_HISTORY_RANGE = process.env.DEFAULT_HISTORY_RANGE || '1d';
 const DEFAULT_HISTORY_INTERVAL = process.env.DEFAULT_HISTORY_INTERVAL || '5m';
 const ALPACA_KEY_ID = process.env.ALPACA_KEY_ID;
@@ -533,39 +533,47 @@ io.on('connection', (socket) => {
 	});
 });
 
-const fetchHistorical = async (symbol, { range, interval }) => {
-	const requestedRange = range || DEFAULT_HISTORY_RANGE;
+const fetchHistorical = async (symbol, query) => {
+	const { interval, start: startParam, end: endParam, limit: limitParam } = query || {};
 	const requestedInterval = interval || DEFAULT_HISTORY_INTERVAL;
 	const timeframe = timeframeMap.get(requestedInterval) || '5Min';
-	const start = subtractFromNow(requestedRange).toISOString();
+	let start;
+	let params = { timeframe, start };
+	if (startParam) {
+		params.start = new Date(startParam).toISOString();
+	} 
+	if (endParam) {
+		params.end = new Date(endParam).toISOString();
+	}
+	if (limitParam) {
+		params.limit = Number(limitParam);
+	}
 
-	const data = await callAlpacaData(`/v2/stocks/${encodeURIComponent(symbol)}/bars`, {
-		timeframe,
-		start,
-		limit: 600,
-	});
+	const data = await callAlpacaData(`/v2/stocks/${encodeURIComponent(symbol)}/bars`, params);
 
 	return {
 		symbol: symbol.toUpperCase(),
 		timeframe,
-		range: requestedRange,
+		start,
+		end: params.end,
 		bars: data.bars || [],
 	};
 };
 
 const fetchNews = async (symbols) => {
-	if (!symbols.length) {
-		return [];
-	}
+	   // remove early exit: always fetch latest news, symbols filter optional
 
 	try {
-		const payload = await callAlpacaData('/v1beta1/news', {
-			symbols: symbols.join(','),
-			limit: MAX_NEWS_PER_SYMBOL * symbols.length,
-		});
+		   // assemble news API params for v2 endpoint
+		   const params = { limit: MAX_NEWS_PER_SYMBOL * Math.max(symbols.length, 1) };
+		   if (symbols.length > 0) {
+			   params.symbols = symbols.join(',');
+		   }
+		   // use v2 news endpoint for REST fetching
+		   const payload = await callAlpacaData('/v1beta1/news', params);
 
-		return (payload?.news || payload || [])
-			.slice(0, MAX_NEWS_PER_SYMBOL * symbols.length)
+		   return (payload?.news || payload || [])
+			   .slice(0, MAX_NEWS_PER_SYMBOL * Math.max(symbols.length, 1))
 			.map((item) => ({
 				id: item.id || `${item.symbols?.[0] || 'NEWS'}-${item.created_at}`,
 				title: item.headline || item.title,
@@ -666,11 +674,23 @@ app.get('/api/market/history/:symbol', async (req, res) => {
 	}
 });
 
+// stock bars endpoint: single-symbol bar query with timeframe, start, end, limit
+app.get('/api/market/bars/:symbol', async (req, res) => {
+	const { symbol } = req.params;
+	if (!symbol) {
+		return res.status(400).json({ message: 'Symbol parameter is required.' });
+	}
+	try {
+		const barsData = await fetchHistorical(symbol.toUpperCase(), req.query);
+		res.json(barsData);
+	} catch (error) {
+		console.error('Failed to fetch bar data:', error);
+		res.status(502).json({ message: 'Failed to retrieve bar data.' });
+	}
+});
+
 app.get('/api/market/news', async (req, res) => {
 	const symbols = normaliseSymbols(req.query.symbols);
-	if (symbols.length === 0) {
-		return res.status(400).json({ message: 'Query parameter "symbols" is required.' });
-	}
 
 	try {
 		const news = await fetchNews(symbols);

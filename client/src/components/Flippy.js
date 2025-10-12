@@ -8,7 +8,7 @@ const fontSize = Math.floor(height * 0.8);
 const BG_COLOR = "rgb(0,0,0)";
 const BG_COLOR_LIGHT = "rgb(32,32,32)";
 const FONT_COLOR = "rgb(240,240,240)";
-const FLIP_SPEED = 15;
+const FLIP_SPEED = 10;
 const HUE_FADE_SPEED = 0.5;
 
 const MAX_CONCURRENT_AUDIO = 20;
@@ -96,12 +96,13 @@ function genCharGroup(s) {
 genCharGroup("?");
 genCharGroup(" ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 genCharGroup("0123456789");
-genCharGroup("%$.");
+genCharGroup("%$.'!;:");
 genCharGroup("-+");
-genCharGroup("#");
-
-// make white char
-CHAR_CANVAS["#"] = genCharCanvas(" ", "rgb(240,240,240)", "rgb(255,255,255)");
+genCharGroup("_#*^");
+CHAR_CANVAS["_"] = genCharCanvas(" ");
+CHAR_CANVAS["#"] = genCharCanvas(" ", "rgb(200,200,200)", "rgb(255,255,255)");
+CHAR_CANVAS["*"] = genCharCanvas(" ", "rgb(200,0,0)", "rgb(255,0,0)");
+CHAR_CANVAS["^"] = genCharCanvas(" ", "rgb(0,200,0)", "rgb(0,255,0)");
 
 function findGroup(char) {
   return CHAR_GROUP_MAP[char] ?? -1;
@@ -143,7 +144,7 @@ const Flippy = ({ maxLen, target = "" , percent = 0.0}) => {
     Array.from({ length: maxLen }, () => [' ', '', 0.0]) // current letter, next letter, transition progress
   );
   const delayRef = useRef(
-    Array.from({ length: maxLen }, () => Math.random() * 0.1) // delay before progressing towards target
+    Array.from({ length: maxLen }, () => Math.random() * 0.2) // delay before progressing towards target
   );
   const hueRef = useRef(0.0);
 
@@ -208,7 +209,7 @@ const Flippy = ({ maxLen, target = "" , percent = 0.0}) => {
           // reached target
           if (letters[i][1] == '') {
             letters[i][2] = 0.0;
-            delay[i] = Math.random() * 0.1; // create delay on reaching target
+            delay[i] = Math.random() * 0.2; // create delay on reaching target
           }
 
           // play flip sound
