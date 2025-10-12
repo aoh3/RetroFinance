@@ -14,14 +14,14 @@
   gap: 0.6rem;
 }
 
-.splitflap-input {
+.flippy-input {
   cursor: text;
   outline: none;
   display: inline-flex;
   border-bottom: 2px solid rgba(255, 255, 255, 0.08);
 }
 
-.splitflap-input:focus-visible {
+.flippy-input:focus-visible {
   border-color: #f4f4f2;
 }
 
@@ -38,7 +38,7 @@
   cursor: pointer;
 }
 
-.symbol-chip.active .splitflap-string {
+.symbol-chip.active .flippy-string {
   filter: brightness(1.2);
 }
 
@@ -52,6 +52,12 @@
   border: none;
   padding: 0;
   cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.2rem;
+  transition: transform 0.1s;
+}
+.trading-panel-qty-controls button:hover {
+  transform: scale(1.1);
 }
 
 .static-button {
@@ -84,8 +90,46 @@
   cursor: pointer;
 }
 
-.trading-panel-actions button.active .splitflap-string {
+.trading-panel-actions button.active .flippy-string {
   filter: brightness(1.1);
+}
+/* Buy/Sell specific coloring */
+/* Buy/Sell button styling */
+.buy-button, .sell-button {
+  border: 2px solid transparent;
+  border-radius: 0.3rem;
+  transition: border 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.buy-button:hover, .buy-button.active {
+  border-color: rgba(100,255,100,0.9);
+  background: rgba(100,255,100,0.2);
+  box-shadow: 0 0 8px rgba(100,255,100,0.7);
+}
+.sell-button:hover, .sell-button.active {
+  border-color: rgba(255,100,100,0.9);
+  background: rgba(255,100,100,0.2);
+  box-shadow: 0 0 8px rgba(255,100,100,0.7);
+}
+/* Submit button highlight */
+.submit-button {
+  border: 2px solid transparent;
+  border-radius: 0.3rem;
+  transition: border 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.submit-button:hover:not(:disabled) {
+  border-color: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.2);
+  box-shadow: 0 0 8px rgba(255,255,255,0.7);
+}
+.qty-button {
+  border: 2px solid transparent;
+  border-radius: 0.3rem;
+  transition: border 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.qty-button:hover:not(:disabled) {
+  border-color: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.2);
+  box-shadow: 0 0 8px rgba(255,255,255,0.7);
 }
 
 .trading-panel-actions .submit {
@@ -103,10 +147,10 @@
   text-align: left;
 }
 
-.trading-feedback.success .splitflap-string {
+.trading-feedback.success .flippy-string {
   filter: drop-shadow(0 0 4px rgba(100, 255, 180, 0.3));
 }
 
-.trading-feedback.error .splitflap-string {
+.trading-feedback.error .flippy-string {
   filter: drop-shadow(0 0 4px rgba(255, 100, 100, 0.3));
 }

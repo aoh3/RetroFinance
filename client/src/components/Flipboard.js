@@ -5,9 +5,10 @@ import SplitFlapText from './splitflap/SplitFlapText';
 import TileGraph from './TileGraph';
 import RollingHeadline from './RollingHeadline';
 import TradingPanel from './TradingPanel';
-import { MarketProvider, useMarketStatus, useQuote } from '../hooks/useMarketFeed';
+import { MarketProvider, useQuote } from '../hooks/useMarketFeed';
 import useHistoricalData from '../hooks/useHistoricalData';
-import useNewsFeed from '../hooks/useNewsFeed';
+import { useQuery } from '@tanstack/react-query';
+// import real-time hook removed; use REST-based useNewsFeed instead
 import { useAlpacaAccount, useAlpacaGetQuotes } from '../hooks/useAlpaca';
 import Flippy from './Flippy';
 
@@ -15,7 +16,8 @@ const WATCHLIST_SYMBOLS = ['AAPL', 'GOOG', 'MSFT', 'TSLA', 'AMZN', 'NVDA'];
 const ACCOUNT_ROWS = [
   { label: 'EQUITY', field: 'portfolio_value' },
   { label: 'CASH', field: 'cash' },
-  { label: 'BUY POWER', field: 'buying_power' },
+  { label: 'RT IRA', field: 'buying_power' },
+  { label: '401K', field: 'effective_buying_power' }
 ];
 
 const formatPrice = (value) => {
@@ -54,6 +56,47 @@ const toneForChange = (value) => {
 const WatchlistPanel = ({ symbols, onSelect, selectedSymbol }) => {
   // fetch quotes as dictionary keyed by symbol
   const { data: quotes = {}, isLoading, error } = useAlpacaGetQuotes(symbols);
+    // local state for simulated price updates
+  const [displayQuotes, setDisplayQuotes] = useState({});
+
+  // initialize displayQuotes when data arrives, seed PrevTradePrice
+  useEffect(() => {
+    if (quotes && Object.keys(quotes).length) {
+      const initial = {};
+      Object.entries(quotes).forEach(([sym, snap]) => {
+        // keep original trade price for clamping
+        initial[sym] = { ...snap, BasePrice: snap.LatestTrade.Price };
+      });
+      setDisplayQuotes(initial);
+    }
+  }, [quotes]);
+
+  // randomly adjust price by ±0.3–1% every 10s based on last trade price
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDisplayQuotes((prev) => {
+        const next = {};
+        Object.entries(prev).forEach(([sym, snap]) => {
+          const oldPrice = snap.LatestTrade?.Price;
+          if (oldPrice != null) {
+            const pct = (Math.random() * (2 - 0.3) + 0.3) / 100;
+            const dir = Math.random() < 0.5 ? -1 : 1;
+            let newPrice = oldPrice * (1 + dir * pct);
+            // clamp to ±3% of original BasePrice
+            const base = snap.BasePrice ?? oldPrice;
+            const minPrice = base * 0.97;
+            const maxPrice = base * 1.03;
+            newPrice = Math.min(Math.max(newPrice, minPrice), maxPrice);
+            next[sym] = { ...snap, LatestTrade: { Price: newPrice } };
+          } else {
+            next[sym] = snap;
+          }
+        });
+        return next;
+      });
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <section className="board-section watchlist" aria-label="Watchlist">
@@ -66,16 +109,28 @@ const WatchlistPanel = ({ symbols, onSelect, selectedSymbol }) => {
         <Flippy maxLen={4} target={"CHG%"} />
       </div>
       <div className="board-rows" role="list">
-        {Object.entries(quotes).map(([symbol, snap], index) => (
+        {Object.entries(displayQuotes).map(([symbol, snap]) => (
           <button
             key={symbol}
             type="button"
             className={clsx('board-row', { selected: selectedSymbol === symbol })}
             onClick={() => onSelect(symbol)}
           >
+            {/* Symbol column */}
+            <Flippy maxLen={symbol.length} target={symbol} />
+            {/* Price column */}
+            <Flippy maxLen={7} target={formatPrice(snap.LatestTrade.Price)} />
+            {/* Change % column (relative to daily close) */}
             <Flippy
-              maxLen={19}
-              target={`${symbol} $${snap.LatestTrade.Price.toFixed(2)} ${(((snap.LatestTrade.Price - snap.PrevDailyBar.ClosePrice) / snap.PrevDailyBar.ClosePrice) * 100).toFixed(2)}%`}
+              maxLen={6}
+              target={formatPercent(
+                ((snap.LatestTrade.Price - snap.PrevDailyBar.ClosePrice) /
+                  snap.PrevDailyBar.ClosePrice) *
+                  100
+              )}
+              percent={((snap.LatestTrade.Price - snap.PrevDailyBar.ClosePrice) /
+                  snap.PrevDailyBar.ClosePrice) *
+                  100}
             />
           </button>
         ))}
@@ -86,34 +141,27 @@ const WatchlistPanel = ({ symbols, onSelect, selectedSymbol }) => {
 
 const AccountsPanel = () => {
   const { data, error } = useAlpacaAccount();
-  const tone = (value) => (value >= 0 ? 'up' : 'down');
+  // override these values once account data loads
+  const account = data
+    ? { ...data, buying_power: 12543.4, effective_buying_power: 34200.12 }
+    : null;
 
   return (
     <section className="board-section accounts" aria-label="Accounts">
-      <SplitFlapText value="ACCOUNTS" padTo={18} align="center" />
+      <Flippy maxLen={8} target={"ACCOUNTS"} /> 
       <div className="board-rows" role="list">
         {ACCOUNT_ROWS.map((row, index) => {
-          const raw = data ? Number(data[row.field]) : null;
+          const raw = account ? Number(account[row.field]) : null;
           return (
             <div className="board-row" key={row.field}>
-              <SplitFlapText value={row.label} padTo={12} size="sm" baseDelay={index * 60} />
-              <SplitFlapText
-                value={raw === null || Number.isNaN(raw) ? '---' : `$${raw.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}`}
-                padTo={16}
-                size="sm"
-                align="right"
-                tone={raw === null || Number.isNaN(raw) ? 'neutral' : tone(raw)}
-                baseDelay={index * 60}
-              />
+              <Flippy maxLen={row.label.length} target={row.label} />
+              <Flippy maxLen={12} target={" ".repeat(12 - formatPrice(raw).length) + formatPrice(raw)} />
             </div>
           );
         })}
       </div>
       {error && (
-        <SplitFlapText value="ALPACA OFFLINE" padTo={18} align="center" tone="warning" size="sm" />
+        <Flippy maxLen={18} target={"ALPACA OFFLINE"} />
       )}
     </section>
   );
@@ -172,21 +220,26 @@ const GraphPanel = ({ symbol }) => {
   );
 };
 
-const NewsPanel = ({ symbols }) => {
-  const { data } = useNewsFeed(symbols, { refetchInterval: 180_000 });
+const NewsPanel = () => {
+  // fetch latest global news and take top 5
+  const { data: news = [] } = useQuery({
+    queryKey: ['news', 'global'],
+    queryFn: async () => {
+      const resp = await fetch('/api/market/news');
+      if (!resp.ok) throw new Error('Unable to retrieve news');
+      return resp.json();
+    },
+    refetchInterval: 180_000,
+    refetchOnWindowFocus: false,
+  });
+  const items = news.slice(0, 5);
 
   return (
     <section className="board-section news" aria-label="News">
-      <SplitFlapText value="NEWS" padTo={18} align="center" />
+  <Flippy maxLen={12} target="    NEWS    " />
       <div className="board-rows" role="list">
-        {(data || []).slice(0, 6).map((item, index) => (
-          <RollingHeadline
-            key={item.id || `${item.symbol}-${index}`}
-            text={`${item.symbol || ''} ${item.title || ''}`}
-            width={34}
-            baseDelay={index * 90}
-            tone="neutral"
-          />
+        {items.map((item, index) => (
+          <Flippy maxLen={4} target={item.symbol || '----'} key={index} />
         ))}
       </div>
     </section>
@@ -213,7 +266,7 @@ const Flipboard = () => {
           <NewsPanel symbols={WATCHLIST_SYMBOLS} />
           <AccountsPanel />
           <section className="board-section trading" aria-label="Trading controls">
-            <SplitFlapText value="TRADE" padTo={12} align="center" />
+            <Flippy target="    TRADE" maxLen={13} />
             <TradingPanel
               symbols={WATCHLIST_SYMBOLS}
               selectedSymbol={selectedSymbol}

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import SplitFlapTile from './splitflap/SplitFlapTile';
 import './TileGraph.css';
+import Flippy from './Flippy';
 
 const DEFAULT_ROWS = 6;
 const DEFAULT_COLUMNS = 32;
@@ -40,15 +40,7 @@ const TileGraph = ({ data, rows = DEFAULT_ROWS, columns = DEFAULT_COLUMNS, baseD
       {matrix.map((row, rowIndex) => (
         <div className="tile-graph-row" key={`graph-row-${rowIndex}`}>
           {row.map((char, columnIndex) => (
-            <SplitFlapTile
-              key={`graph-cell-${rowIndex}-${columnIndex}`}
-              char={char}
-              size="sm"
-              delay={baseDelay + columnIndex * 25 + rowIndex * 10}
-              jitter={45}
-              speed={80}
-              tone={char === '=' ? 'neutral' : 'neutral'}
-            />
+            <Flippy maxLen={1} target={"#"} percent={0.0} />
           ))}
         </div>
       ))}

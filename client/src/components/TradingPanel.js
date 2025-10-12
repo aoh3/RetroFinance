@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import clsx from 'clsx';
-import SplitFlapText from './splitflap/SplitFlapText';
 import { useAlpacaOrderPlacement } from '../hooks/useAlpaca';
+import Flippy from './Flippy';
 import './TradingPanel.css';
 
 const clampQuantity = (value) => {
@@ -19,7 +19,8 @@ const TradingPanel = ({
 }) => {
   const [symbol, setSymbol] = useState(selectedSymbol || 'AAPL');
   const [quantity, setQuantity] = useState(1);
-  const [side, setSide] = useState('buy');
+  // no default side; allow toggle off
+  const [side, setSide] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const orderMutation = useAlpacaOrderPlacement();
 
@@ -45,7 +46,8 @@ const TradingPanel = ({
 
       if (/^[a-zA-Z0-9]$/.test(event.key)) {
         event.preventDefault();
-        setSymbol((prev) => (prev + event.key).slice(0, 6).toUpperCase());
+        // limit user input to 4 characters
+        setSymbol((prev) => (prev + event.key).slice(0, 4).toUpperCase());
       }
     },
     [symbol, onSymbolChange]
@@ -78,6 +80,10 @@ const TradingPanel = ({
       setFeedback({ type: 'error', message: 'Symbol required' });
       return;
     }
+    if (!side) {
+      setFeedback({ type: 'error', message: 'Select Buy or Sell' });
+      return;
+    }
 
     try {
       const payload = {
@@ -101,37 +107,17 @@ const TradingPanel = ({
   return (
     <div className="trading-panel" role="form" aria-label="Trading controls">
       <div className="trading-panel-row">
-        <SplitFlapText value="SYMBOL" padTo={6} size="sm" tone="neutral" />
         <div
-          className="splitflap-input"
+          className="flippy-input"
           role="textbox"
           tabIndex={0}
           aria-label="Symbol"
           onKeyDown={handleSymbolKey}
         >
-          <SplitFlapText value={symbol || ''} padTo={6} size="sm" tone="neutral" stagger={35} />
+          <Flippy maxLen={6} target={symbol || ''} percent={0.0} />
         </div>
-        <div className="trading-panel-symbol-options" aria-hidden={!symbolList.length}>
-          {symbolList.map((candidate) => (
-            <button
-              key={candidate}
-              type="button"
-              className={clsx('symbol-chip', { active: candidate === symbol })}
-              onClick={() => {
-                setSymbol(candidate);
-                onSymbolChange?.(candidate);
-              }}
-            >
-              <SplitFlapText value={candidate} padTo={4} size="sm" tone="neutral" stagger={30} />
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="trading-panel-row">
-        <SplitFlapText value="QTY" padTo={6} size="sm" tone="neutral" />
         <div
-          className="splitflap-input"
+          className="flippy-input"
           role="spinbutton"
           tabIndex={0}
           aria-label="Quantity"
@@ -140,13 +126,13 @@ const TradingPanel = ({
           aria-valuemax={9999}
           onKeyDown={handleQuantityKey}
         >
-          <SplitFlapText value={String(quantity)} padTo={4} size="sm" tone="neutral" stagger={40} />
+          <Flippy maxLen={4} target={String(quantity)} percent={0.0} />
         </div>
         <div className="trading-panel-qty-controls">
-          <button type="button" onClick={() => incrementQty(1)} className="static-button">
+          <button type="button" onClick={() => incrementQty(1)} className={clsx('static-button', 'qty-button')}>
             <span className="static-label">+</span>
           </button>
-          <button type="button" onClick={() => incrementQty(-1)} className="static-button">
+          <button type="button" onClick={() => incrementQty(-1)} className={clsx('static-button', 'qty-button')}>
             <span className="static-label">-</span>
           </button>
         </div>
@@ -155,32 +141,33 @@ const TradingPanel = ({
       <div className="trading-panel-row trading-panel-actions">
         <button
           type="button"
-          className={clsx('static-button', { active: side === 'buy' })}
-          onClick={() => setSide('buy')}
+          className={clsx('static-button', 'buy-button', { active: side === 'buy' })}
+          onClick={() => setSide((prev) => (prev === 'buy' ? null : 'buy'))}
         >
           <span className="static-label">BUY</span>
         </button>
         <button
           type="button"
-          className={clsx('static-button', { active: side === 'sell' })}
-          onClick={() => setSide('sell')}
+          className={clsx('static-button', 'sell-button', { active: side === 'sell' })}
+          onClick={() => setSide((prev) => (prev === 'sell' ? null : 'sell'))}
         >
           <span className="static-label">SELL</span>
         </button>
-        <button type="button" className="submit static-button" onClick={placeOrder} disabled={orderMutation.isPending}>
-          <span className="static-label">{orderMutation.isPending ? 'SENDING' : 'SUBMIT'}</span>
+        <button
+          type="button"
+          className={clsx('static-button', 'submit-button')}
+          onClick={placeOrder}
+          disabled={orderMutation.isPending || !side}
+        >
+          <span className="static-label">
+            {orderMutation.isPending ? 'SENDING' : 'SUBMIT'}
+          </span>
         </button>
       </div>
 
       {feedback && (
         <div className={clsx('trading-feedback', feedback.type)}>
-          <SplitFlapText
-            value={feedback.message}
-            padTo={24}
-            size="sm"
-            tone={feedback.type === 'success' ? 'up' : 'down'}
-            stagger={35}
-          />
+          <Flippy maxLen={24} target={feedback.type === 'error' ? "FAILED TO PLACE ORDER" : feedback.message} percent={0.0} />
         </div>
       )}
     </div>

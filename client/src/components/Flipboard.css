@@ -11,7 +11,7 @@
   width: 100%;
   display: grid;
   grid-template-columns: 2fr 3fr 2fr;
-  grid-template-rows: 2fr 1fr;
+  grid-template-rows: 1.6fr 1fr;
   gap: 1.2rem;
 }
 
@@ -40,6 +40,7 @@
 .board-section.watchlist {
   grid-column: 1;
   grid-row: 1;
+  flex-grow: 0.5;
 }
 
 .board-section.graph {
