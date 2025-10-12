@@ -218,7 +218,7 @@ const GraphPanel = ({ symbol }) => {
       <div className="board-header">
         <Flippy maxLen={13} target={"STOCK HISTORY"} />      
       </div>
-      <TileGraph data={series} rows={8} columns={16} />
+      <TileGraph data={series} rows={10} columns={20} />
     </section>
   );
 };

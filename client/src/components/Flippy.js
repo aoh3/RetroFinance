@@ -141,6 +141,24 @@ function fillRoundedRect(ctx, x, y, width, height, radius) {
 }
 
 const Flippy = ({ maxLen, target = "" , percent = 0.0}) => {
+  const canvasWidth = width * maxLen + borderWidth * 2;
+  const canvasHeight = height + borderWidth * 2;
+  const backCanvasRef = useRef(
+    (() => {
+      const c = document.createElement('canvas');
+      c.width = canvasWidth;
+      c.height = canvasHeight;
+      return c;
+    })()
+  );
+  const frontCanvasRef = useRef(
+    (() => {
+      const c = document.createElement('canvas');
+      c.width = canvasWidth;
+      c.height = canvasHeight;
+      return c;
+    })()
+  );
   const canvasRef = useRef(null);
   const lettersRef = useRef(
     Array.from({ length: maxLen }, () => [' ', '', 0.0]) // current letter, next letter, transition progress
@@ -149,15 +167,19 @@ const Flippy = ({ maxLen, target = "" , percent = 0.0}) => {
     Array.from({ length: maxLen }, () => Math.random() * 0.2) // delay before progressing towards target
   );
   const hueRef = useRef(0.0);
+  const forceDrawRef = useRef(true);
 
   useEffect(() => {
     const letters = lettersRef.current;
     const delay = delayRef.current;
+    const backCanvas = backCanvasRef.current;
+    const backCtx = backCanvas.getContext('2d');
+    const frontCanvas = frontCanvasRef.current;
+    const frontCtx = frontCanvas.getContext('2d', { willReadFrequently: true });
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-
-    canvas.width = width * maxLen + borderWidth * 2;
-    canvas.height = height + borderWidth * 2;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
 
     let animationFrameId;
     let prevTime = Date.now();
@@ -167,19 +189,23 @@ const Flippy = ({ maxLen, target = "" , percent = 0.0}) => {
       let deltaTime = Math.min((currTime - prevTime) / 1000.0, 500.0);
       prevTime = currTime;
 
-      ctx.fillStyle = "rgb(19, 19, 19)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "rgba(81, 81, 81, 1)";
-      ctx.fillRect(borderWidth, borderWidth, width * maxLen, height);
+      let oldHue = hueRef.current;
       if (percent < 0.0) {
         hueRef.current = Math.max(-1.0, hueRef.current - deltaTime * HUE_FADE_SPEED);
       } else if (percent > 0.0) {
         hueRef.current = Math.min(1.0, hueRef.current + deltaTime * HUE_FADE_SPEED);
       }
-      let hueStrength = Math.abs(hueRef.current);
-      ctx.fillStyle = (hueRef.current > 0 ? "rgba(0, 255, 0, " : "rgba(255, 0, 0, ") + hueStrength * 0.5 + ")";
-      ctx.fillRect(borderWidth, borderWidth, width * maxLen, height);
+      if ((oldHue != hueRef.current) || forceDrawRef.current) {
+        let hueStrength = Math.abs(hueRef.current);
+        backCtx.fillStyle = "rgb(19, 19, 19)";
+        backCtx.fillRect(0, 0, canvas.width, canvas.height);
+        backCtx.fillStyle = "rgba(81, 81, 81, 1)";
+        backCtx.fillRect(borderWidth, borderWidth, width * maxLen, height);
+        backCtx.fillStyle = (hueRef.current > 0 ? "rgba(0, 255, 0, " : "rgba(255, 0, 0, ") + hueStrength * 0.5 + ")";
+        backCtx.fillRect(borderWidth, borderWidth, width * maxLen, height);
+      }
 
+      let draws = 0;
       for (let i = 0; i < maxLen; i++) {
         // UPDATE LETTER STATE
 
@@ -221,12 +247,16 @@ const Flippy = ({ maxLen, target = "" , percent = 0.0}) => {
         } else {
           letters[i][1] = '';
           letters[i][2] = 0.0;
+          if (!forceDrawRef.current) continue;
         }
     
         // DRAW LETTER
 
-        ctx.save();
-        ctx.translate(borderWidth + i * width, borderWidth);
+        draws++;
+
+        frontCtx.save();
+        frontCtx.translate(borderWidth + i * width, borderWidth);
+        frontCtx.clearRect(0, 0, width, height);
 
         // bg
         let letterBot = CHAR_CANVAS[letters[i][0]];
@@ -241,60 +271,66 @@ const Flippy = ({ maxLen, target = "" , percent = 0.0}) => {
         }
 
         // draw pivot
-        ctx.fillStyle = "rgb(0,0,0)";
-        ctx.fillRect(0, height * 0.49, width, height * 0.02);
-        const gradient = ctx.createLinearGradient(0, height * 0.425, 0, height * 0.575);
+        frontCtx.fillStyle = "rgb(0,0,0)";
+        frontCtx.fillRect(0, height * 0.49, width, height * 0.02);
+        const gradient = frontCtx.createLinearGradient(0, height * 0.425, 0, height * 0.575);
         gradient.addColorStop(0, "rgb(64,64,64)");
         gradient.addColorStop(1, "rgb(0,0,0)");
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, height * 0.425, width * 0.05, height * 0.15);
-        ctx.fillRect(width * 0.95, height * 0.425, width * 0.05, height * 0.15);
+        frontCtx.fillStyle = gradient;
+        frontCtx.fillRect(0, height * 0.425, width * 0.05, height * 0.15);
+        frontCtx.fillRect(width * 0.95, height * 0.425, width * 0.05, height * 0.15);
 
         // top static letter
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(0, 0, width, height * 0.5);
-        ctx.clip();
-        ctx.drawImage(letterTop, 0, 0);
-        ctx.restore();
+        frontCtx.save();
+        frontCtx.beginPath();
+        frontCtx.rect(0, 0, width, height * 0.5);
+        frontCtx.clip();
+        frontCtx.drawImage(letterTop, 0, 0);
+        frontCtx.restore();
 
         // bottom static letter
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(0, height * 0.5, width, height * 0.5);
-        ctx.clip();
-        ctx.drawImage(letterBot, 0, 0);
-        ctx.restore();
+        frontCtx.save();
+        frontCtx.beginPath();
+        frontCtx.rect(0, height * 0.5, width, height * 0.5);
+        frontCtx.clip();
+        frontCtx.drawImage(letterBot, 0, 0);
+        frontCtx.restore();
 
         // flipping letter
-        ctx.save();
+        frontCtx.save();
         let p = letters[i][2];
 
         // modify p slightly to add effect of gravity
         p = Math.pow(p, 2.0);
 
         let scale = Math.cos(p * Math.PI);
-        ctx.translate(0, height * 0.5);
-        ctx.scale(1, Math.abs(scale));
-        ctx.translate(0, -height * 0.5);
+        frontCtx.translate(0, height * 0.5);
+        frontCtx.scale(1, Math.abs(scale));
+        frontCtx.translate(0, -height * 0.5);
         if (scale > 0) {
           // draw bottom letter top half
-          ctx.beginPath();
-          ctx.rect(0, 0, width, height * 0.5);
-          ctx.clip();
-          ctx.drawImage(letterBot, 0, 0);
+          frontCtx.beginPath();
+          frontCtx.rect(0, 0, width, height * 0.5);
+          frontCtx.clip();
+          frontCtx.drawImage(letterBot, 0, 0);
         } else if (scale < 0) {
           // draw top letter bottom half
-          ctx.beginPath();
-          ctx.rect(0, height * 0.5, width, height * 0.5);
-          ctx.clip();
-          ctx.drawImage(letterTop, 0, 0);
+          frontCtx.beginPath();
+          frontCtx.rect(0, height * 0.5, width, height * 0.5);
+          frontCtx.clip();
+          frontCtx.drawImage(letterTop, 0, 0);
         }
-        // ctx.fillRect(0, 0, width, height);
-        ctx.restore();
+        // frontCtx.fillRect(0, 0, width, height);
+        frontCtx.restore();
         
-        ctx.restore();
+        frontCtx.restore();
       }
+      console.log(draws);
+      
+      ctx.drawImage(backCanvas, 0, 0);
+      ctx.drawImage(frontCanvas, 0, 0);
+
+      forceDrawRef.current = false;
 
       animationFrameId = requestAnimationFrame(drawLoop);
     }
