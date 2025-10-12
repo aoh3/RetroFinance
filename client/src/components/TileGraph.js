@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import SplitFlapTile from './splitflap/SplitFlapTile';
 import './TileGraph.css';
 
-const DEFAULT_ROWS = 10;
+const DEFAULT_ROWS = 6;
 const DEFAULT_COLUMNS = 32;
 
 const buildMatrix = (series, rows, columns) => {

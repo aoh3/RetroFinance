@@ -96,19 +96,6 @@
   opacity: 1;
 }
 
-/* clip the halves so only the appropriate half of the glyph is visible */
-.splitflap-half-top .glyph,
-.splitflap-flip-top .flip-glyph {
-  /* small overlap to avoid seam but use em-based offsets so full glyph shows */
-  clip-path: inset(0 0 calc(50% - 0.4px) 0);
-  transform: translateY(-0.35em);
-}
-
-.splitflap-half-bottom .glyph,
-.splitflap-flip-bottom .flip-glyph {
-  clip-path: inset(calc(50% - 0.4px) 0 0 0);
-  transform: translateY(-1.35em);
-}
 
 /* per-size micro-tuning (aggressive seam removal) */
 .splitflap-tile.size-sm .splitflap-half-top .glyph,
@@ -122,24 +109,24 @@
   transform: translateY(-1.18em);
 }
 
-.splitflap-tile.size-md .splitflap-half-top .glyph,
-.splitflap-tile.size-md .splitflap-flip-top .flip-glyph {
+ .splitflap-tile.size-md .splitflap-half-top .glyph,
+ .splitflap-tile.size-md .splitflap-flip-top .flip-glyph {
   clip-path: inset(0 0 calc(50% - 0.4px) 0);
   transform: translateY(-0.35em);
 }
-.splitflap-tile.size-md .splitflap-half-bottom .glyph,
-.splitflap-tile.size-md .splitflap-flip-bottom .flip-glyph {
+ .splitflap-tile.size-md .splitflap-half-bottom .glyph,
+ .splitflap-tile.size-md .splitflap-flip-bottom .flip-glyph {
   clip-path: inset(calc(50% - 0.4px) 0 0 0);
   transform: translateY(-1.35em);
 }
 
-.splitflap-tile.size-lg .splitflap-half-top .glyph,
-.splitflap-tile.size-lg .splitflap-flip-top .flip-glyph {
+ .splitflap-tile.size-lg .splitflap-half-top .glyph,
+ .splitflap-tile.size-lg .splitflap-flip-top .flip-glyph {
   clip-path: inset(0 0 calc(50% - 0.8px) 0);
   transform: translateY(-0.4em);
 }
-.splitflap-tile.size-lg .splitflap-half-bottom .glyph,
-.splitflap-tile.size-lg .splitflap-flip-bottom .flip-glyph {
+ .splitflap-tile.size-lg .splitflap-half-bottom .glyph,
+ .splitflap-tile.size-lg .splitflap-flip-bottom .flip-glyph {
   clip-path: inset(calc(50% - 0.8px) 0 0 0);
   transform: translateY(-1.5em);
 }
@@ -150,6 +137,18 @@
   /* no additional transforms here; top/bottom halves set the glyph position */
   display: block;
   width: 100%;
+}
+
+/* DEBUG OVERRIDES: ensure glyphs show in their halves */
+.splitflap-half-top .glyph,
+.splitflap-flip-top .flip-glyph {
+  clip-path: none !important;
+  transform: translateY(0) !important;
+}
+.splitflap-half-bottom .glyph,
+.splitflap-flip-bottom .flip-glyph {
+  clip-path: none !important;
+  transform: translateY(-100%) !important;
 }
 
 @keyframes flap-top {

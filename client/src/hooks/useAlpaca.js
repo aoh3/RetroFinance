@@ -55,3 +55,13 @@ export const useAlpacaOrderPlacement = () => {
     },
   });
 };
+
+export const useAlpacaGetQuotes = (symbols = []) =>
+  useQuery({
+    queryKey: ['alpaca', 'quotes', symbols],
+    queryFn: async () => {
+      const data = await getJson(`/api/market/quotes?symbols=${encodeURIComponent(symbols.join(','))}`);
+      return data;
+    },
+    enabled: symbols.length > 0,
+  });

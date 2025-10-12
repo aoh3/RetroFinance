@@ -1,14 +1,15 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react'; // ensure useMemo, useState imported
 import clsx from 'clsx';
 import './Flipboard.css';
 import SplitFlapText from './splitflap/SplitFlapText';
 import TileGraph from './TileGraph';
 import RollingHeadline from './RollingHeadline';
 import TradingPanel from './TradingPanel';
-import { MarketProvider, useMarketStatus, useQuotes, useQuote } from '../hooks/useMarketFeed';
+import { MarketProvider, useMarketStatus, useQuote } from '../hooks/useMarketFeed';
 import useHistoricalData from '../hooks/useHistoricalData';
 import useNewsFeed from '../hooks/useNewsFeed';
-import { useAlpacaAccount } from '../hooks/useAlpaca';
+import { useAlpacaAccount, useAlpacaGetQuotes } from '../hooks/useAlpaca';
+import Flippy from './Flippy';
 
 const WATCHLIST_SYMBOLS = ['AAPL', 'GOOG', 'MSFT', 'TSLA', 'AMZN', 'NVDA'];
 const ACCOUNT_ROWS = [
@@ -51,44 +52,30 @@ const toneForChange = (value) => {
 };
 
 const WatchlistPanel = ({ symbols, onSelect, selectedSymbol }) => {
-  const quotes = useQuotes(symbols);
-  const status = useMarketStatus();
+  // fetch quotes as dictionary keyed by symbol
+  const { data: quotes = {}, isLoading, error } = useAlpacaGetQuotes(symbols);
 
   return (
     <section className="board-section watchlist" aria-label="Watchlist">
       <div className="board-header">
-        <SplitFlapText value="WATCHLIST" padTo={18} align="center" />
-        <SplitFlapText value={`FEED ${status.toUpperCase()}`} padTo={18} align="right" size="sm" />
+        <Flippy maxLen={9} target={"WATCHLIST"} />      
       </div>
       <div className="board-columns">
-        <SplitFlapText value="SYMBOL" padTo={8} size="sm" />
-        <SplitFlapText value="PRICE" padTo={10} size="sm" align="right" />
-        <SplitFlapText value="CHG %" padTo={8} size="sm" align="right" />
+        <Flippy maxLen={3} target={"SYM"} />
+        <Flippy maxLen={5} target={"PRICE"} />
+        <Flippy maxLen={4} target={"CHG%"} />
       </div>
       <div className="board-rows" role="list">
-        {quotes.map((quote, index) => (
+        {Object.entries(quotes).map(([symbol, snap], index) => (
           <button
-            key={quote.symbol || index}
+            key={symbol}
             type="button"
-            className={clsx('board-row', { selected: selectedSymbol === quote.symbol })}
-            onClick={() => quote.symbol && onSelect(quote.symbol)}
+            className={clsx('board-row', { selected: selectedSymbol === symbol })}
+            onClick={() => onSelect(symbol)}
           >
-            <SplitFlapText value={quote.symbol || '---'} padTo={8} size="sm" baseDelay={index * 80} />
-            <SplitFlapText
-              value={formatPrice(quote.price)}
-              padTo={10}
-              size="sm"
-              align="right"
-              tone={toneForChange(quote.change)}
-              baseDelay={index * 80}
-            />
-            <SplitFlapText
-              value={formatPercent(quote.changePercent)}
-              padTo={8}
-              size="sm"
-              align="right"
-              tone={toneForChange(quote.changePercent)}
-              baseDelay={index * 80}
+            <Flippy
+              maxLen={19}
+              target={`${symbol} $${snap.LatestTrade.Price.toFixed(2)} ${(((snap.LatestTrade.Price - snap.PrevDailyBar.ClosePrice) / snap.PrevDailyBar.ClosePrice) * 100).toFixed(2)}%`}
             />
           </button>
         ))}

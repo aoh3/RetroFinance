@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
+const path = require('path'); // for serving static assets
 const Alpaca = require('@alpacahq/alpaca-trade-api');
 require('dotenv').config();
 
@@ -63,9 +64,17 @@ const io = new Server(server, {
 	},
 });
 
+// enable CORS and JSON parsing
 app.use(cors());
 app.use(express.json());
+// serve client public assets
+// serve client public folder (for development) or build folder if exists
+const publicPath = path.join(__dirname, '../client/public');
+// use build if it exists, else public
+app.use(express.static(publicPath));
 
+
+// normalize query symbols
 const normaliseSymbols = (symbols) => {
 	if (!symbols) {
 		return [];
@@ -288,9 +297,39 @@ const fetchAlpacaSnapshots = async (symbols) => {
 	if (!alpacaClient || symbols.length === 0) {
 		return {};
 	}
-
+	// console.log('Fetching Alpaca snapshots for', symbols);
 	const response = await alpacaClient.getSnapshots(symbols);
-	return response || {};
+	// console.log(response);
+	// normalize snapshots: extract only desired fields
+	const snapshots = response || [];
+	if (Array.isArray(snapshots)) {
+		return snapshots.reduce((acc, snap) => {
+			const key = snap.symbol || snap.Symbol;
+			if (key) {
+				acc[key] = {
+					DailyBar: {
+						ClosePrice: snap.DailyBar?.ClosePrice,
+						HighPrice: snap.DailyBar?.HighPrice,
+						LowPrice: snap.DailyBar?.LowPrice,
+						OpenPrice: snap.DailyBar?.OpenPrice,
+					},
+					LatestTrade: {
+						Price: snap.LatestTrade?.Price,
+					},
+					PrevDailyBar: {
+						ClosePrice: snap.PrevDailyBar?.ClosePrice,
+						HighPrice: snap.PrevDailyBar?.HighPrice,
+						LowPrice: snap.PrevDailyBar?.LowPrice,
+						OpenPrice: snap.PrevDailyBar?.OpenPrice,
+					},
+				};
+			}
+			return acc;
+		}, {});
+	}
+
+	console.log('snapshots:', snapshots);
+	return snapshots;
 };
 
 const primeSocketWithSnapshot = async (socket, symbols) => {
@@ -555,17 +594,19 @@ app.get('/api/market/quotes', async (req, res) => {
 
 	try {
 		const snapshots = await fetchAlpacaSnapshots(symbols);
-		const payload = symbols
-			.map((symbol) => {
-				const snapshot = snapshots[symbol] || snapshots[symbol.toUpperCase()];
-				return ingestSnapshot(symbol, snapshot);
-			})
-			.filter(Boolean);
-
-		if (!payload.length) {
+		// return simplified snapshots keyed by symbol
+		const result = {};
+		symbols.forEach((symbol) => {
+			const snap = snapshots[symbol] || snapshots[symbol.toUpperCase()];
+			if (snap) {
+				result[symbol] = snap;
+			}
+		});
+		if (Object.keys(result).length === 0) {
 			console.warn('No snapshots returned from Alpaca for symbols:', symbols, 'raw snapshots keys:', Object.keys(snapshots || {}));
 		}
-		res.json(payload);
+
+		res.json(result);
 	} catch (error) {
 		console.error('Error retrieving Alpaca quotes:', error);
 		res.status(502).json({ message: 'Failed to retrieve quotes from Alpaca.' });
