@@ -44,7 +44,7 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-size: var(--tile-font-size, 1.2rem);
-  /* make glyph twice as tall so top and bottom halves can show the same glyph */
+  /* glyph is rendered at double height so each half can display the correct portion */
   height: 200%;
   line-height: calc(var(--tile-line-height, 3.2rem) * 2);
 }
@@ -99,51 +99,49 @@
 /* clip the halves so only the appropriate half of the glyph is visible */
 .splitflap-half-top .glyph,
 .splitflap-flip-top .flip-glyph {
-  /* default aggressive overlap (base) */
-  clip-path: inset(0 0 calc(50% - 1.6px) 0);
-  transform: translateY(-25%);
+  /* small overlap to avoid seam but use em-based offsets so full glyph shows */
+  clip-path: inset(0 0 calc(50% - 0.4px) 0);
+  transform: translateY(-0.35em);
 }
 
 .splitflap-half-bottom .glyph,
 .splitflap-flip-bottom .flip-glyph {
-  clip-path: inset(calc(50% - 1.6px) 0 0 0);
-  transform: translateY(-75%);
+  clip-path: inset(calc(50% - 0.4px) 0 0 0);
+  transform: translateY(-1.35em);
 }
 
-/* small tiles: slightly less translate but still aggressive overlap */
+/* per-size micro-tuning (aggressive seam removal) */
 .splitflap-tile.size-sm .splitflap-half-top .glyph,
 .splitflap-tile.size-sm .splitflap-flip-top .flip-glyph {
-  clip-path: inset(0 0 calc(50% - 1.2px) 0);
-  transform: translateY(-22%);
+  clip-path: inset(0 0 calc(50% - 0.6px) 0);
+  transform: translateY(-0.32em);
 }
 .splitflap-tile.size-sm .splitflap-half-bottom .glyph,
 .splitflap-tile.size-sm .splitflap-flip-bottom .flip-glyph {
-  clip-path: inset(calc(50% - 1.2px) 0 0 0);
-  transform: translateY(-78%);
+  clip-path: inset(calc(50% - 0.6px) 0 0 0);
+  transform: translateY(-1.18em);
 }
 
-/* medium tiles (default) - strongest overlap */
 .splitflap-tile.size-md .splitflap-half-top .glyph,
 .splitflap-tile.size-md .splitflap-flip-top .flip-glyph {
-  clip-path: inset(0 0 calc(50% - 2px) 0);
-  transform: translateY(-25%);
+  clip-path: inset(0 0 calc(50% - 0.4px) 0);
+  transform: translateY(-0.35em);
 }
 .splitflap-tile.size-md .splitflap-half-bottom .glyph,
 .splitflap-tile.size-md .splitflap-flip-bottom .flip-glyph {
-  clip-path: inset(calc(50% - 2px) 0 0 0);
-  transform: translateY(-75%);
+  clip-path: inset(calc(50% - 0.4px) 0 0 0);
+  transform: translateY(-1.35em);
 }
 
-/* large tiles: slightly more nudge to align larger glyphs */
 .splitflap-tile.size-lg .splitflap-half-top .glyph,
 .splitflap-tile.size-lg .splitflap-flip-top .flip-glyph {
-  clip-path: inset(0 0 calc(50% - 2.4px) 0);
-  transform: translateY(-28%);
+  clip-path: inset(0 0 calc(50% - 0.8px) 0);
+  transform: translateY(-0.4em);
 }
 .splitflap-tile.size-lg .splitflap-half-bottom .glyph,
 .splitflap-tile.size-lg .splitflap-flip-bottom .flip-glyph {
-  clip-path: inset(calc(50% - 2.4px) 0 0 0);
-  transform: translateY(-72%);
+  clip-path: inset(calc(50% - 0.8px) 0 0 0);
+  transform: translateY(-1.5em);
 }
 
 /* center the glyph vertically so each half lines up on the midline */
