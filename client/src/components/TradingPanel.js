@@ -130,12 +130,14 @@ const TradingPanel = ({
       if (!symbols.includes(sym)) {
         symbols.push(sym);
         setFeedback({ type: 'success', message: `Added ${sym} to watchlist` });
+        setSymbolInWatchlist(true);
       } else {
         let index = symbols.indexOf(sym);
         if (index !== -1) {
             symbols.splice(index, 1);
         }
         setFeedback({ type: 'success', message: `Removed ${sym} from watchlist` });
+        setSymbolInWatchlist(false);
       }
     } catch (error) {
       setFeedback({ type: 'error', message: error.message || 'Failed to add to watchlist' });
