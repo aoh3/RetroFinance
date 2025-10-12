@@ -1,0 +1,39 @@
+{
+  "name": "retrofinance",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js",
+    "client": "npm start --prefix client",
+    "install-client": "npm install --prefix client"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aoh3/RetroFinance.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/aoh3/RetroFinance/issues"
+  },
+  "homepage": "https://github.com/aoh3/RetroFinance#readme",
+  "dependencies": {
+    "@alpacahq/alpaca-trade-api": "^3.1.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "mongoose": "^8.19.1",
+    "node-fetch": "^3.3.2",
+    "socket.io": "^4.8.1",
+    "ws": "^8.18.0",
+    "yahoo-finance2": "^2.12.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

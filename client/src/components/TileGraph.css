@@ -1,0 +1,13 @@
+.tile-graph {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.4rem 0.2rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 0.2rem;
+}
+
+.tile-graph-row {
+  display: flex;
+  justify-content: center;
+}
