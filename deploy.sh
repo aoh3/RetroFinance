@@ -35,36 +35,25 @@ else
   cd RetroFinance
 fi
 
-# Install and build backend
- echo "Installing backend dependencies..."
- cd backend
- export PORT=4000
- npm install --production
+# Install all dependencies
+echo "Installing dependencies..."
+npm install
+npm run install-client
 
- # Start backend with PM2
- echo "Starting backend service..."
- pm2 delete retro-backend || true
- pm2 start server.js --name retro-backend
+# Start backend and frontend via npm scripts using PM2
+echo "Starting backend and client services..."
+pm2 delete retro-backend || true
+pm2 start npm --name retro-backend -- run dev
 
- # Install and build client
- echo "Installing client dependencies..."
- cd ../client
- npm install
- npm run build
+pm2 delete retro-client || true
+pm2 start npm --name retro-client -- run client
 
- # Serve client with PM2
- # using `serve` package to host static files
- echo "Installing and starting frontend service..."
- sudo npm install -g serve
- pm2 delete retro-frontend || true
- pm2 start serve --name retro-frontend -- -s build -l 80
+# Save PM2 process list and enable startup on reboot
+echo "Configuring PM2 startup..."
+pm2 save
+pm2 startup systemd -u $(whoami) --hp $(eval echo ~$(whoami))
 
- # Save PM2 process list and enable startup on reboot
- echo "Configuring PM2 startup..."
- pm2 save
- pm2 startup systemd -u $(whoami) --hp $(eval echo ~$(whoami))
-
- # Show status
- echo "Deployment complete."
- echo "Public IP: $(curl -s http://ifconfig.co)"
- pm2 ls
+# Show status
+echo "Deployment complete."
+echo "Public IP: $(curl -s http://ifconfig.co)"
+pm2 ls
