@@ -236,7 +236,7 @@ const NewsPanel = () => {
     refetchOnWindowFocus: false,
   });
   const items = news.slice(0, 5);
-  let itemLines = items.map(item => fullJustify(item.title.toUpperCase(), 25).slice(0, 3));
+  let itemLines = items.map(item => fullJustify(item.title.toUpperCase(), 23).slice(0, 3));
 
   return (
     <section className="board-section news" aria-label="News">
