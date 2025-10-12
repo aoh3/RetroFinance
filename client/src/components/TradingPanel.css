@@ -54,6 +54,24 @@
   cursor: pointer;
 }
 
+.static-button {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 0.15rem;
+  padding: 0.15rem 0.4rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.static-button .static-label {
+  font-family: 'Courier New', Courier, monospace;
+  color: #f4f4f2;
+  letter-spacing: 0.08rem;
+  font-size: 0.95rem;
+}
+
 .trading-panel-actions {
   justify-content: flex-end;
   gap: 0.8rem;

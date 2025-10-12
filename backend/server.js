@@ -561,6 +561,10 @@ app.get('/api/market/quotes', async (req, res) => {
 				return ingestSnapshot(symbol, snapshot);
 			})
 			.filter(Boolean);
+
+		if (!payload.length) {
+			console.warn('No snapshots returned from Alpaca for symbols:', symbols, 'raw snapshots keys:', Object.keys(snapshots || {}));
+		}
 		res.json(payload);
 	} catch (error) {
 		console.error('Error retrieving Alpaca quotes:', error);

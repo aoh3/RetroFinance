@@ -127,16 +127,25 @@ const SplitFlapTile = ({
     >
       <div className="splitflap-inner">
         <div className="splitflap-half splitflap-half-top">
-          <span>{topStatic}</span>
+          <div className="glyph" aria-hidden>
+            {topStatic}
+          </div>
         </div>
         <div className="splitflap-half splitflap-half-bottom">
-          <span>{bottomStatic}</span>
+          <div className="glyph" aria-hidden>
+            {bottomStatic}
+          </div>
         </div>
+
         <div className="splitflap-flip splitflap-flip-top">
-          <span>{flipTop}</span>
+          <div className="glyph flip-glyph">
+            {flipTop}
+          </div>
         </div>
         <div className="splitflap-flip splitflap-flip-bottom">
-          <span>{flipBottom}</span>
+          <div className="glyph flip-glyph">
+            {flipBottom}
+          </div>
         </div>
       </div>
     </div>

@@ -143,11 +143,11 @@ const TradingPanel = ({
           <SplitFlapText value={String(quantity)} padTo={4} size="sm" tone="neutral" stagger={40} />
         </div>
         <div className="trading-panel-qty-controls">
-          <button type="button" onClick={() => incrementQty(1)}>
-            <SplitFlapText value="+" padTo={2} size="sm" tone="neutral" stagger={25} />
+          <button type="button" onClick={() => incrementQty(1)} className="static-button">
+            <span className="static-label">+</span>
           </button>
-          <button type="button" onClick={() => incrementQty(-1)}>
-            <SplitFlapText value="-" padTo={2} size="sm" tone="neutral" stagger={25} />
+          <button type="button" onClick={() => incrementQty(-1)} className="static-button">
+            <span className="static-label">-</span>
           </button>
         </div>
       </div>
@@ -155,26 +155,20 @@ const TradingPanel = ({
       <div className="trading-panel-row trading-panel-actions">
         <button
           type="button"
-          className={clsx({ active: side === 'buy' })}
+          className={clsx('static-button', { active: side === 'buy' })}
           onClick={() => setSide('buy')}
         >
-          <SplitFlapText value="BUY" padTo={4} size="sm" tone="up" stagger={30} />
+          <span className="static-label">BUY</span>
         </button>
         <button
           type="button"
-          className={clsx({ active: side === 'sell' })}
+          className={clsx('static-button', { active: side === 'sell' })}
           onClick={() => setSide('sell')}
         >
-          <SplitFlapText value="SELL" padTo={4} size="sm" tone="down" stagger={30} />
+          <span className="static-label">SELL</span>
         </button>
-        <button type="button" className="submit" onClick={placeOrder} disabled={orderMutation.isPending}>
-          <SplitFlapText
-            value={orderMutation.isPending ? 'SENDING' : 'SUBMIT'}
-            padTo={7}
-            size="sm"
-            tone={actionTone}
-            stagger={30}
-          />
+        <button type="button" className="submit static-button" onClick={placeOrder} disabled={orderMutation.isPending}>
+          <span className="static-label">{orderMutation.isPending ? 'SENDING' : 'SUBMIT'}</span>
         </button>
       </div>
 

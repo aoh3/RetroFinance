@@ -49,38 +49,58 @@ export const MarketProvider = ({ symbols, children }) => {
       setStatus('error');
     };
 
-    const primeFromRest = async () => {
+    const primeFromRest = async (attempts = 3, backoff = 300) => {
       if (!uniqueSymbols.length) {
         return;
       }
 
-      try {
-        const params = new URLSearchParams();
-        params.set('symbols', symbolsKey);
-        const response = await fetch(`/api/market/quotes?${params.toString()}`);
-        if (!response.ok) {
-          throw new Error('REST quote prime failed');
+      const params = new URLSearchParams();
+      params.set('symbols', symbolsKey);
+
+      for (let i = 0; i < attempts; i += 1) {
+        try {
+          const response = await fetch(`/api/market/quotes?${params.toString()}`);
+          if (!response.ok) {
+            throw new Error(`REST prime HTTP ${response.status}`);
+          }
+          const payload = await response.json();
+          if (payload?.length) {
+            setQuotes((prev) => {
+              const next = { ...prev };
+              payload.forEach((quote) => {
+                if (!quote?.symbol) return;
+                next[quote.symbol] = {
+                  ...(next[quote.symbol] || {}),
+                  ...quote,
+                  lastUpdate: Date.now(),
+                };
+              });
+              return next;
+            });
+            setStatus('live');
+            return;
+          }
+
+          // empty payload: retry after backoff
+          if (i < attempts - 1) {
+            // exponential backoff
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise((resolve) => setTimeout(resolve, backoff * Math.pow(2, i)));
+            continue;
+          }
+
+          // if we've exhausted attempts and still empty, leave gracefully
+          console.warn('primeFromRest: empty snapshot after retries');
+          return;
+        } catch (error) {
+          console.error('primeFromRest failed (attempt', i + 1, '):', error);
+          if (i < attempts - 1) {
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise((resolve) => setTimeout(resolve, backoff * Math.pow(2, i)));
+            continue;
+          }
+          return;
         }
-        const payload = await response.json();
-        setQuotes((prev) => {
-          const next = { ...prev };
-          (payload || []).forEach((quote) => {
-            if (!quote?.symbol) {
-              return;
-            }
-            next[quote.symbol] = {
-              ...(next[quote.symbol] || {}),
-              ...quote,
-              lastUpdate: Date.now(),
-            };
-          });
-          return next;
-        });
-        if (payload?.length) {
-          setStatus('live');
-        }
-      } catch (error) {
-        console.error('Failed to prime quotes from REST API:', error);
       }
     };
 
