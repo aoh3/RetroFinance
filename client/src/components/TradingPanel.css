@@ -121,6 +121,18 @@
   background: rgba(255,255,255,0.2);
   box-shadow: 0 0 8px rgba(255,255,255,0.7);
 }
+.add-watchlist-button {
+  display: block;
+  margin-right: auto;
+  border: 2px solid transparent;
+  border-radius: 0.3rem;
+  transition: border 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.add-watchlist-button:hover:not(:disabled) {
+  border-color: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.2);
+  box-shadow: 0 0 8px rgba(255,255,255,0.7);
+}
 .qty-button {
   border: 2px solid transparent;
   border-radius: 0.3rem;

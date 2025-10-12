@@ -19,6 +19,7 @@ const TradingPanel = ({
 }) => {
   const [symbol, setSymbol] = useState(selectedSymbol || 'AAPL');
   const [quantity, setQuantity] = useState(1);
+  const [symbolInWatchlist, setSymbolInWatchlist] = useState(false);
   // no default side; allow toggle off
   const [side, setSide] = useState(null);
   const [feedback, setFeedback] = useState(null);
@@ -29,6 +30,15 @@ const TradingPanel = ({
       setSymbol(selectedSymbol);
     }
   }, [selectedSymbol]);
+
+  // run custom logic whenever symbol changes
+  useEffect(() => {
+    if (symbols.includes(symbol.toUpperCase())) {
+      setSymbolInWatchlist(true);
+    } else {
+      setSymbolInWatchlist(false);
+    }
+  }, [symbol]);
 
   const handleSymbolKey = useCallback(
     (event) => {
@@ -101,6 +111,37 @@ const TradingPanel = ({
     }
   };
 
+  const modifyWatchlist = async () => {
+    if (!symbol) {
+      setFeedback({ type: 'error', message: 'Symbol required' });
+      return;
+    }
+    const sym = symbol.toUpperCase();
+    try {
+      // validate symbol by fetching quote
+      const resp = await fetch(`/api/market/quotes?symbols=${sym}`);
+      if (!resp.ok) {
+        throw new Error('Invalid symbol');
+      }
+      const data = await resp.json();
+      if (!data[sym]) {
+        throw new Error('Symbol not found');
+      }
+      if (!symbols.includes(sym)) {
+        symbols.push(sym);
+        setFeedback({ type: 'success', message: `Added ${sym} to watchlist` });
+      } else {
+        let index = symbols.indexOf(sym);
+        if (index !== -1) {
+            symbols.splice(index, 1);
+        }
+        setFeedback({ type: 'success', message: `Removed ${sym} from watchlist` });
+      }
+    } catch (error) {
+      setFeedback({ type: 'error', message: error.message || 'Failed to add to watchlist' });
+    }
+  };
+
   const actionTone = side === 'buy' ? 'up' : 'down';
   const symbolList = useMemo(() => symbols || [], [symbols]);
 
@@ -141,6 +182,15 @@ const TradingPanel = ({
       <div className="trading-panel-row trading-panel-actions">
         <button
           type="button"
+          className={clsx('static-button', 'add-watchlist-button')}
+          onClick={modifyWatchlist}
+        >
+            <span className="static-label">
+              {symbolInWatchlist ? 'REMOVE FROM WATCHLIST' : 'ADD TO WATCHLIST'}
+            </span>
+        </button>
+        <button
+          type="button"
           className={clsx('static-button', 'buy-button', { active: side === 'buy' })}
           onClick={() => setSide((prev) => (prev === 'buy' ? null : 'buy'))}
         >
@@ -167,7 +217,7 @@ const TradingPanel = ({
 
       {feedback && (
         <div className={clsx('trading-feedback', feedback.type)}>
-          <Flippy maxLen={24} target={feedback.type === 'error' ? "FAILED TO PLACE ORDER" : feedback.message} percent={0.0} />
+          <Flippy maxLen={24} target={feedback.message.toUpperCase()} percent={0.0} />
         </div>
       )}
     </div>

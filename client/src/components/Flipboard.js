@@ -105,6 +105,19 @@ const WatchlistPanel = ({ symbols, onSelect, selectedSymbol }) => {
     return () => clearInterval(timer);
   }, []);
 
+  // sort symbols by change percentage (highest gain first)
+  const sortedEntries = useMemo(() => {
+    return Object.entries(displayQuotes).sort(([, a], [, b]) => {
+      const aPct = a.PrevDailyBar.ClosePrice
+        ? (a.LatestTrade.Price - a.PrevDailyBar.ClosePrice) / a.PrevDailyBar.ClosePrice
+        : 0;
+      const bPct = b.PrevDailyBar.ClosePrice
+        ? (b.LatestTrade.Price - b.PrevDailyBar.ClosePrice) / b.PrevDailyBar.ClosePrice
+        : 0;
+      return bPct - aPct;
+    });
+  }, [displayQuotes]);
+
   return (
     <section className="board-section watchlist" aria-label="Watchlist">
       <div className="board-header">
@@ -116,15 +129,15 @@ const WatchlistPanel = ({ symbols, onSelect, selectedSymbol }) => {
         <Flippy maxLen={4} target={"CHG%"} />
       </div>
       <div className="board-rows" role="list">
-        {Object.entries(displayQuotes).map(([symbol, snap]) => (
+        {sortedEntries.slice(0, 8).map(([symbol, snap], idx) => (
           <button
-            key={symbol}
+            key={idx}
             type="button"
             className={clsx('board-row', { selected: selectedSymbol === symbol })}
             onClick={() => onSelect(symbol)}
           >
             {/* Symbol column */}
-            <Flippy maxLen={symbol.length} target={symbol} />
+            <Flippy maxLen={4} target={symbol} />
             {/* Price column */}
             <Flippy maxLen={7} target={formatPrice(snap.LatestTrade.Price)} />
             {/* Change % column (relative to daily close) */}
@@ -202,6 +215,9 @@ const GraphPanel = ({ symbol }) => {
 
   return (
     <section className="board-section graph" aria-label="Price history">
+      <div className="board-header">
+        <Flippy maxLen={13} target={"STOCK HISTORY"} />      
+      </div>
       <TileGraph data={series} rows={8} columns={16} />
     </section>
   );
@@ -224,7 +240,7 @@ const NewsPanel = () => {
 
   return (
     <section className="board-section news" aria-label="News">
-  <Flippy maxLen={12} target="    NEWS    " />
+  <Flippy maxLen={10} target="   NEWS   " />
       <div className="board-rows" role="list">
         {items.map((item, index) => (
         <div>

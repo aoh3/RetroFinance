@@ -94,7 +94,8 @@ function genCharGroup(s) {
 };
 
 genCharGroup("?");
-genCharGroup(" ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+genCharGroup(" ");
+genCharGroup("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 genCharGroup("0123456789");
 genCharGroup("%$.'!;:");
 genCharGroup("-+");
