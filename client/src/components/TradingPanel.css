@@ -78,6 +78,13 @@
   font-size: 0.95rem;
 }
 
+@media only screen and (max-width: 767px) {
+    .static-button .static-label {
+        font-size: 0.5rem;
+    }
+
+}
+
 .trading-panel-actions {
   justify-content: flex-end;
   gap: 0.8rem;
