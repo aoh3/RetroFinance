@@ -15,5 +15,15 @@ body {
   color: #f4f4f2;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow: hidden;
+}
+
+@media screen and (min-width: 768px) {
+    body::-webkit-scrollbar {
+        display: none; 
+    }
+
+    body {
+      overflow: hidden;
+    }
+
 }
