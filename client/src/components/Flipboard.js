@@ -78,32 +78,32 @@ const WatchlistPanel = ({ symbols, onSelect, selectedSymbol }) => {
     }
   }, [quotes]);
 
-  // randomly adjust price by ±0.3–1% every 10s based on last trade price
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setDisplayQuotes((prev) => {
-        const next = {};
-        Object.entries(prev).forEach(([sym, snap]) => {
-          const oldPrice = snap.LatestTrade?.Price;
-          if (oldPrice != null) {
-            const pct = (Math.random() * (2 - 0.3) + 0.3) / 100;
-            const dir = Math.random() < 0.5 ? -1 : 1;
-            let newPrice = oldPrice * (1 + dir * pct);
-            // clamp to ±3% of original BasePrice
-            const base = snap.BasePrice ?? oldPrice;
-            const minPrice = base * 0.97;
-            const maxPrice = base * 1.03;
-            newPrice = Math.min(Math.max(newPrice, minPrice), maxPrice);
-            next[sym] = { ...snap, LatestTrade: { Price: newPrice } };
-          } else {
-            next[sym] = snap;
-          }
-        });
-        return next;
-      });
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
+  // // randomly adjust price by ±0.3–1% every 10s based on last trade price
+  // useEffect(() => {
+  //   const timer = setInterval(() => {
+  //     setDisplayQuotes((prev) => {
+  //       const next = {};
+  //       Object.entries(prev).forEach(([sym, snap]) => {
+  //         const oldPrice = snap.LatestTrade?.Price;
+  //         if (oldPrice != null) {
+  //           const pct = (Math.random() * (2 - 0.3) + 0.3) / 100;
+  //           const dir = Math.random() < 0.5 ? -1 : 1;
+  //           let newPrice = oldPrice * (1 + dir * pct);
+  //           // clamp to ±3% of original BasePrice
+  //           const base = snap.BasePrice ?? oldPrice;
+  //           const minPrice = base * 0.97;
+  //           const maxPrice = base * 1.03;
+  //           newPrice = Math.min(Math.max(newPrice, minPrice), maxPrice);
+  //           next[sym] = { ...snap, LatestTrade: { Price: newPrice } };
+  //         } else {
+  //           next[sym] = snap;
+  //         }
+  //       });
+  //       return next;
+  //     });
+  //   }, 5000);
+  //   return () => clearInterval(timer);
+  // }, []);
 
   // sort symbols by change percentage (highest gain first)
   const sortedEntries = useMemo(() => {
